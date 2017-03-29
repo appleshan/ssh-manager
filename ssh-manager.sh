@@ -11,10 +11,12 @@
 #================== Globals ==================================================
 
 # Version
-VERSION="0.6"
+VERSION="0.7-dev"
 
 # Configuration
 HOST_FILE="$HOME/.ssh_servers"
+# default structur is $DATA_ALIAS$DATA_DELIM$DATA_HUSER$DATA_DELIM$DATA_HADDR$DATA_DELIM$DATA_HPORT
+# or, more human friendly alias:user:host:port
 DATA_DELIM=":"
 DATA_ALIAS=1
 DATA_HUSER=2
@@ -94,12 +96,34 @@ function get_user ()
 	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HUSER' }'
 }
 function server_add() {
-	probe "$alias"
-	if [ $? -eq 0 ]; then
-		as	echo "$0: alias '$alias' is in use"
+	echo $alias
+	# if user@host
+	# This grep syntaxt SHOULD be POSIX BRE compliant
+	if echo $alias | grep -xq "^[[:alnum:].-]\{1,\}@[[:alnum:].-]\{1,\}$"
+		then
+		_user=`echo $alias | cut -d @ -f 1`
+		_host=`echo $alias | cut -d @ -f 2`
+		_alias=$_host
+		_port=$SSH_DEFAULT_PORT
+		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
+	#elif alias:user:host(:port)
+	elif echo $alias | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
+		then
+		_alias=`echo $alias | cut -d $DATA_DELIM -f 1`
+		_user=`echo $alias | cut -d $DATA_DELIM -f 2`
+		_host=`echo $alias | cut -d $DATA_DELIM -f 3`
+		_port=`echo $alias | cut -d $DATA_DELIM -f 4`; if [ -z "$_port"]; then _port=$SSH_DEFAULT_PORT; fi
+		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
 	else
-		echo "$alias$DATA_DELIM$user" >> $HOST_FILE
-		echo "new alias '$alias' added"
+		echo "$alias: is not a valid input."
+		exit 1;
+	fi
+	probe "$_alias"
+	if [ $? -eq 0 ]; then
+		echo "$0: alias '$alias' already exist"
+	else
+		echo "$_full" >> $HOST_FILE
+		echo "new alias '$_full' added"
 	fi
 }
 
