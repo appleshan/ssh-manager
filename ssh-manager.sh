@@ -96,31 +96,30 @@ function get_user ()
 	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HUSER' }'
 }
 function server_add() {
-	echo $alias
 	# if user@host
 	# This grep syntaxt SHOULD be POSIX BRE compliant
-	if echo $alias | grep -xq "^[[:alnum:].-]\{1,\}@[[:alnum:].-]\{1,\}$"
+	if echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}@[[:alnum:].-]\{1,\}$"
 		then
-		_user=`echo $alias | cut -d @ -f 1`
-		_host=`echo $alias | cut -d @ -f 2`
+		_user=`echo ${1} | cut -d @ -f 1`
+		_host=`echo ${1} | cut -d @ -f 2`
 		_alias=$_host
 		_port=$SSH_DEFAULT_PORT
 		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
-	#elif alias:user:host(:port)
-	elif echo $alias | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
+	# elif alias:user:host(:port)?
+	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
 		then
-		_alias=`echo $alias | cut -d $DATA_DELIM -f 1`
-		_user=`echo $alias | cut -d $DATA_DELIM -f 2`
-		_host=`echo $alias | cut -d $DATA_DELIM -f 3`
-		_port=`echo $alias | cut -d $DATA_DELIM -f 4`; if [ -z "$_port"]; then _port=$SSH_DEFAULT_PORT; fi
+		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
+		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
+		_host=`echo ${1} | cut -d $DATA_DELIM -f 3`
+		_port=`echo ${1} | cut -d $DATA_DELIM -f 4`; if [ -z "$_port"]; then _port=$SSH_DEFAULT_PORT; fi
 		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
 	else
-		echo "$alias: is not a valid input."
+		echo "${1}: is not a valid input."
 		exit 1;
 	fi
 	probe "$_alias"
 	if [ $? -eq 0 ]; then
-		echo "$0: alias '$alias' already exist"
+		echo "$0: alias '${1}' already exist"
 	else
 		echo "$_full" >> $HOST_FILE
 		echo "new alias '$_full' added"
@@ -192,28 +191,28 @@ fi
 case "$cmd" in
 	# Connect to host
 	cc )
-		probe "$alias"
+		probe "${1}"
 		if [ $? -eq 0 ]; then
 			if [ "$user" == ""  ]; then
-				user=$(get_user "$alias")
+				user=$(get_user "${1}")
 			fi
-			addr=$(get_addr "$alias")
-			port=$(get_port "$alias")
+			addr=$(get_addr "${1}")
+			port=$(get_port "${1}")
 			# Use default port when parameter is missing
 			if [ "$port" == "" ]; then
 				port=$SSH_DEFAULT_PORT
 			fi
-			echo "connecting to '$alias' ($addr:$port)"
+			echo "connecting to '${1}' ($addr:$port)"
 			ssh $user@$addr -p $port
 		else
-			echo "$0: unknown alias '$alias'"
+			echo "$0: unknown alias '${1}'"
 			exit 1
 		fi
 		;;
 
 	# Add new alias
 	add )
-		server_add
+		server_add ${2}
 		;;
 	# Export config
 	export )
@@ -222,13 +221,13 @@ case "$cmd" in
 		;;
 	# Delete ali
 	del )
-		probe "$alias"
+		probe "${1}"
 		if [ $? -eq 0 ]; then
-			cat $HOST_FILE | sed '/^'$alias$DATA_DELIM'/d' > /tmp/.tmp.$$
+			cat $HOST_FILE | sed '/^'${1}$DATA_DELIM'/d' > /tmp/.tmp.$$
 			mv /tmp/.tmp.$$ $HOST_FILE
-			echo "alias '$alias' removed"
+			echo "alias '${1}' removed"
 		else
-			echo "$0: unknown alias '$alias'"
+			echo "$0: unknown alias '${1}'"
 		fi
 		;;
 	* )
