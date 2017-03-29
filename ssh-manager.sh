@@ -38,6 +38,7 @@ function exec_ping() {
 			;;
 	esac
 }
+
 function test_host() {
 	exec_ping $* > /dev/null
 	if [ $? != 0 ] ; then
@@ -50,6 +51,7 @@ function test_host() {
 		echo -n "]"
 	fi 
 }
+
 function show_server() {
 	while IFS=: read label user ip port
 	do
@@ -58,26 +60,22 @@ function show_server() {
 		cecho -n -blue $label
 		echo -ne '|'
 		cecho -n -red $user
-		cecho -n -yellow "@"
+		echo -n "@"
 		cecho -n -white $ip
-		echo -ne ':'
+		echo -n ':'
 		if [ "$port" == "" ]; then
 			port=$SSH_DEFAULT_PORT
 		fi
 		cecho -yellow $port
-		echo
 	done < $HOST_FILE
-}
-function separator() {
-	echo -e "----\t----\t----\t----\t----\t----\t----\t----"
 }
 
 function list_commands() {
 	echo -ne "List of availables commands:\n"
-	echo -ne "$0 "; cecho -n -yellow "cc"; echo -ne "\t<alias> [username]\t\t"; cecho -n -white "connect to server\n"
-	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<alias>:<user>:<host>:[port]\t"; cecho -n -white "add new server\n"
-	echo -ne "$0 "; cecho -n -yellow "del"; echo -ne "\t<alias>\t\t\t\t"; cecho -n -white "delete server\n"
-	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -n -white "export config\n"
+	echo -ne "$0 "; cecho -n -yellow "cc"; echo -ne "\t<alias> [username]\t\t"; cecho -white "connect to server"
+	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<alias>:<user>:<host>:[port]\t"; cecho -white "add new server"
+	echo -ne "$0 "; cecho -n -yellow "del"; echo -ne "\t<alias>\t\t\t\t"; cecho -white "delete server"
+	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -white "export config"
 }
 
 function probe ()
@@ -110,6 +108,7 @@ function get_user ()
 	als=$1
 	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HUSER' }'
 }
+
 function server_add() {
 	# if user@host
 	# This grep syntaxt SHOULD be POSIX BRE compliant
@@ -140,9 +139,11 @@ function server_add() {
 		echo "new alias '$_full' added"
 	fi
 }
+
 function cecho() {
-	while [ "$1" ]; do
-		case "$1" in 
+	one_line=false
+	while [ "${1}" ]; do
+		case "${1}" in 
 			-normal)        color="\033[00m" ;;
 			-black)         color="\033[30;01m" ;;
 			-red)           color="\033[31;01m" ;;
@@ -152,16 +153,20 @@ function cecho() {
 			-magenta)       color="\033[35;01m" ;;
 			-cyan)          color="\033[36;01m" ;;
 			-white)         color="\033[37;01m" ;;
-			-n)             one_line=1;   shift ; continue ;;
-			*)              echo -n "$1"; shift ; continue ;;
+			-n)             one_line=true;   shift ; continue ;;
+			*)              echo -n "${1}"; shift ; continue ;;
 		esac
 		shift
-		echo -en "$color"
-		echo -en "$1"
-		echo -en "\033[00m"
+		if ${ENABLE_CECHO}; then
+			echo -en "${color}"
+		fi
+		echo -en "${1}"
+		if ${ENABLE_CECHO}; then
+			echo -en "\033[00m"
+		fi
 		shift
 	done
-	if [ ! $one_line ]; then
+	if ! ${one_line}; then
 		echo
 	fi
 }
