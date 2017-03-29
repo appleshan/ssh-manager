@@ -24,11 +24,12 @@ DATA_HADDR=3
 DATA_HPORT=4
 PING_DEFAULT_TTL=20
 SSH_DEFAULT_PORT=22
+ENABLE_CECHO=true
 
 #================== Functions ================================================
 
 function exec_ping() {
-	case $(uname) in 
+	case $(uname) in
 		MINGW*)
 			ping -n 1 -i $PING_DEFAULT_TTL $@
 			;;
@@ -37,7 +38,6 @@ function exec_ping() {
 			;;
 	esac
 }
-
 function test_host() {
 	exec_ping $* > /dev/null
 	if [ $? != 0 ] ; then
@@ -50,19 +50,34 @@ function test_host() {
 		echo -n "]"
 	fi 
 }
-
+function show_server() {
+	while IFS=: read label user ip port
+	do
+		test_host $ip
+		echo -ne '|'
+		cecho -n -blue $label
+		echo -ne '|'
+		cecho -n -red $user
+		cecho -n -yellow "@"
+		cecho -n -white $ip
+		echo -ne ':'
+		if [ "$port" == "" ]; then
+			port=$SSH_DEFAULT_PORT
+		fi
+		cecho -yellow $port
+		echo
+	done < $HOST_FILE
+}
 function separator() {
 	echo -e "----\t----\t----\t----\t----\t----\t----\t----"
 }
 
 function list_commands() {
-	separator
-	echo -e "Availables commands"
-	separator
-	echo -e "$0 cc\t<alias> [username]\t\tconnect to server"
-	echo -e "$0 add\t<alias>:<user>:<host>:[port]\tadd new server"
-	echo -e "$0 del\t<alias>\t\t\t\tdelete server"
-	echo -e "$0 export\t\t\t\t\texport config"
+	echo -ne "List of availables commands:\n"
+	echo -ne "$0 "; cecho -n -yellow "cc"; echo -ne "\t<alias> [username]\t\t"; cecho -n -white "connect to server\n"
+	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<alias>:<user>:<host>:[port]\t"; cecho -n -white "add new server\n"
+	echo -ne "$0 "; cecho -n -yellow "del"; echo -ne "\t<alias>\t\t\t\t"; cecho -n -white "delete server\n"
+	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -n -white "export config\n"
 }
 
 function probe ()
@@ -125,7 +140,6 @@ function server_add() {
 		echo "new alias '$_full' added"
 	fi
 }
-
 function cecho() {
 	while [ "$1" ]; do
 		case "$1" in 
@@ -141,15 +155,15 @@ function cecho() {
 			-n)             one_line=1;   shift ; continue ;;
 			*)              echo -n "$1"; shift ; continue ;;
 		esac
-	shift
-	echo -en "$color"
-	echo -en "$1"
-	echo -en "\033[00m"
-	shift
-done
-if [ ! $one_line ]; then
-	echo
-fi
+		shift
+		echo -en "$color"
+		echo -en "$1"
+		echo -en "\033[00m"
+		shift
+	done
+	if [ ! $one_line ]; then
+		echo
+	fi
 }
 
 #=============================================================================
@@ -163,29 +177,11 @@ if [ ! -f $HOST_FILE ]; then touch "$HOST_FILE"; fi
 
 # without args
 if [ $# -eq 0 ]; then
-	separator 
-	echo "List of availables servers for user $(whoami) "
-	separator
-	while IFS=: read label user ip port         
-	do    
-	test_host $ip
-	echo -ne "\t"
-	cecho -n -blue $label
-	echo -ne ' ==> '
-	cecho -n -red $user 
-	cecho -n -yellow "@"
-	cecho -n -white $ip
-	echo -ne ' -> '
-	if [ "$port" == "" ]; then
-		port=$SSH_DEFAULT_PORT
-	fi
-	cecho -yellow $port
-	echo
-done < $HOST_FILE
-
-list_commands
-
-exit 0
+	echo -n "List of availables servers for user "; cecho -blue "$(whoami):"
+	_check=$(show_server)
+	echo -e "$_check"| column -t -s '|'
+	echo; list_commands
+	exit 0
 fi
 
 case "$cmd" in
@@ -209,7 +205,6 @@ case "$cmd" in
 			exit 1
 		fi
 		;;
-
 	# Add new alias
 	add )
 		server_add ${2}
