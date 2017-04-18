@@ -25,16 +25,21 @@ DATA_HPORT=4
 PING_DEFAULT_TTL=20
 SSH_DEFAULT_PORT=22
 ENABLE_CECHO=true
+USE_IDN2=true
 
 #================== Functions ================================================
 
 function exec_ping() {
+	host=$@
+	if ${USE_IDN2}; then
+		host=$(idn2 $host)
+	fi
 	case $(uname) in
 		MINGW*)
-			ping -n 1 -i $PING_DEFAULT_TTL $@
+			ping -n 1 -i $PING_DEFAULT_TTL $host
 			;;
 		*)
-			ping -c1 -t$PING_DEFAULT_TTL $@
+			ping -c1 -t$PING_DEFAULT_TTL $host
 			;;
 	esac
 }
@@ -74,6 +79,7 @@ function list_commands() {
 	echo -ne "List of availables commands:\n"
 	echo -ne "$0 "; cecho -n -yellow "co"; echo -ne "\t<alias> [username]\t\t"; cecho -white "connect to server"
 	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<alias>:<user>:<host>:[port]\t"; cecho -white "add new server"
+	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<user>@<host>\t\t\t"; cecho -white "add new server"
 	echo -ne "$0 "; cecho -n -yellow "del"; echo -ne "\t<alias>\t\t\t\t"; cecho -white "delete server"
 	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -white "export config"
 }
@@ -179,11 +185,15 @@ cmd=$1
 alias=$2
 user=$3
 
-# if config file doesn't exist
+# if host file doesn't exist
 if [ ! -f $HOST_FILE ]; then touch "$HOST_FILE"; fi
 
 # without args
 if [ $# -eq 0 ]; then
+	if (${USE_IDN2} && ! [ -x "$(command -v idn2)" ]); then
+		echo "$0: command icn2 not found, but USE_IDN2 set to true in configuration."
+		exit 1
+	fi
 	echo -n "List of availables servers for user "; cecho -blue "$(whoami):"
 	_check=$(show_server)
 	echo -e "$_check"| column -t -s '|'
@@ -216,20 +226,20 @@ case "$cmd" in
 	add )
 		server_add ${2}
 		;;
-	# Export config
+	# Export host file
 	export )
 		echo
 		cat $HOST_FILE
 		;;
-	# Delete ali
+	# Delete alias
 	del|delete )
 		probe "${2}"
 		if [ $? -eq 0 ]; then
-			cat $HOST_FILE | sed '/^'${1}$DATA_DELIM'/d' > /tmp/.tmp.$$
+			cat $HOST_FILE | sed '/^'${2}$DATA_DELIM'/d' > /tmp/.tmp.$$
 			mv /tmp/.tmp.$$ $HOST_FILE
-			echo "alias '${1}' removed"
+			echo "alias '${2}' removed"
 		else
-			echo "$0: unknown alias '${1}'"
+			echo "$0: unknown alias '${2}'"
 		fi
 		;;
 	* )
