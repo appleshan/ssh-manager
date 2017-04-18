@@ -25,7 +25,7 @@ DATA_HPORT=4
 PING_DEFAULT_TTL=20
 SSH_DEFAULT_PORT=22
 ENABLE_CECHO=true
-USE_IDN2=true
+USE_IDN2=false
 
 #================== Functions ================================================
 
