@@ -72,7 +72,7 @@ function show_server() {
 
 function list_commands() {
 	echo -ne "List of availables commands:\n"
-	echo -ne "$0 "; cecho -n -yellow "cc"; echo -ne "\t<alias> [username]\t\t"; cecho -white "connect to server"
+	echo -ne "$0 "; cecho -n -yellow "co"; echo -ne "\t<alias> [username]\t\t"; cecho -white "connect to server"
 	echo -ne "$0 "; cecho -n -yellow "add"; echo -ne "\t<alias>:<user>:<host>:[port]\t"; cecho -white "add new server"
 	echo -ne "$0 "; cecho -n -yellow "del"; echo -ne "\t<alias>\t\t\t\t"; cecho -white "delete server"
 	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -white "export config"
@@ -81,14 +81,16 @@ function list_commands() {
 function probe ()
 {
 	als=$1
-	grep -w -e $als $HOST_FILE > /dev/null
-	return $?
+	awk=$(awk -F "$DATA_DELIM" -v als="$als" '$1 == als { print $0 }' $HOST_FILE 2> /dev/null)
+	if [[ -z "$awk" ]]; then
+		return 1;
+	fi
 }
 
 function get_raw ()
 {
 	als=$1
-	grep -w -e $als $HOST_FILE 2> /dev/null
+	awk -F "$DATA_DELIM" -v als="$als" '$1 == als { print $0 }' $HOST_FILE 2> /dev/null
 }
 
 function get_addr ()
@@ -125,7 +127,7 @@ function server_add() {
 		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
 		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
 		_host=`echo ${1} | cut -d $DATA_DELIM -f 3`
-		_port=`echo ${1} | cut -d $DATA_DELIM -f 4`; if [ -z "$_port"]; then _port=$SSH_DEFAULT_PORT; fi
+		_port=`echo ${1} | cut -d $DATA_DELIM -f 4`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
 		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
 	else
 		echo "${1}: is not a valid input."
@@ -191,22 +193,22 @@ fi
 
 case "$cmd" in
 	# Connect to host
-	cc )
-		probe "${1}"
+	cc|co|connect )
+		probe "${2}"
 		if [ $? -eq 0 ]; then
 			if [ "$user" == ""  ]; then
-				user=$(get_user "${1}")
+				user=$(get_user "${2}")
 			fi
-			addr=$(get_addr "${1}")
-			port=$(get_port "${1}")
+			addr=$(get_addr "${2}")
+			port=$(get_port "${2}")
 			# Use default port when parameter is missing
 			if [ "$port" == "" ]; then
 				port=$SSH_DEFAULT_PORT
 			fi
-			echo "connecting to '${1}' ($addr:$port)"
+			echo "connecting to '${2}' ($addr:$port)"
 			ssh $user@$addr -p $port
 		else
-			echo "$0: unknown alias '${1}'"
+			echo "$0: unknown alias '${2}'"
 			exit 1
 		fi
 		;;
@@ -220,8 +222,8 @@ case "$cmd" in
 		cat $HOST_FILE
 		;;
 	# Delete ali
-	del )
-		probe "${1}"
+	del|delete )
+		probe "${2}"
 		if [ $? -eq 0 ]; then
 			cat $HOST_FILE | sed '/^'${1}$DATA_DELIM'/d' > /tmp/.tmp.$$
 			mv /tmp/.tmp.$$ $HOST_FILE
