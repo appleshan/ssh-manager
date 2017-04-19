@@ -32,16 +32,16 @@ USE_IDN2=false
 #================== Functions ================================================
 
 function exec_ping() {
-	host=$@
+	addr=$@
 	if ${USE_IDN2}; then
-		host=$(idn2 $host)
+		addr=$(idn2 $addr)
 	fi
 	case $(uname) in
 		MINGW*)
-			ping -n 1 -i $PING_DEFAULT_TTL $host
+			ping -n 1 -i $PING_DEFAULT_TTL $addr
 			;;
 		*)
-			ping -c1 -t$PING_DEFAULT_TTL $host
+			ping -c1 -t$PING_DEFAULT_TTL $addr
 			;;
 	esac
 }
@@ -60,15 +60,15 @@ function test_host() {
 }
 
 function show_server() {
-	while IFS=: read label user ip port
+	while IFS=: read label user addr port
 	do
-		test_host $ip
+		test_host $addr
 		echo -ne '|'
 		cecho -n -blue $label
 		echo -ne '|'
 		cecho -n -red $user
 		echo -n "@"
-		cecho -n -white $ip
+		cecho -n -white $addr
 		echo -n ':'
 		if [ "$port" == "" ]; then
 			port=$SSH_DEFAULT_PORT
@@ -216,7 +216,7 @@ case "$cmd" in
 	cc|co|connect )
 		probe "${2}"
 		if [ $? -eq 0 ]; then
-			if [ "$user" == ""  ]; then
+			if [ "${3}" == ""  ]; then
 				user=$(get_user "${2}")
 			fi
 			addr=$(get_addr "${2}")
