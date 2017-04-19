@@ -13,8 +13,10 @@
 # Version
 VERSION="0.7-dev"
 
-# Configuration
-HOST_FILE="$HOME/.ssh_servers"
+# Default Configuration
+CONF_DIR="$HOME/.ssh-manager"
+HOST_FILE="$CONF_DIR/servers"
+CONF_FILE="$CONF_DIR/config"
 # default structur is $DATA_ALIAS$DATA_DELIM$DATA_HUSER$DATA_DELIM$DATA_HADDR$DATA_DELIM$DATA_HPORT
 # or, more human friendly alias:user:host:port
 DATA_DELIM=":"
@@ -186,7 +188,15 @@ alias=$2
 user=$3
 
 # if host file doesn't exist
-if [ ! -f $HOST_FILE ]; then touch "$HOST_FILE"; fi
+if [ ! -d $CONF_DIR ]; then mkdir "$CONF_DIR"; fi
+if [ ! -f $HOST_FILE ]; then
+	if [ -f "$HOME/.ssh_servers" ]; then
+		mv "$HOME/.ssh_servers" $HOST_FILE
+	else
+		touch "$HOST_FILE"
+	fi
+fi
+if [ ! -f $CONF_FILE ]; then touch "$CONF_FILE"; fi
 
 # without args
 if [ $# -eq 0 ]; then
