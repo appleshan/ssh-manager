@@ -32,16 +32,16 @@ USE_IDN2=false
 #================== Functions ================================================
 
 function exec_ping() {
-	addr=$@
+	_addr=$@
 	if ${USE_IDN2}; then
-		addr=$(idn2 $addr)
+		_addr=$(idn2 $_addr)
 	fi
 	case $(uname) in
 		MINGW*)
-			ping -n 1 -i $PING_DEFAULT_TTL $addr
+			ping -n 1 -i $PING_DEFAULT_TTL $_addr
 			;;
 		*)
-			ping -c1 -t$PING_DEFAULT_TTL $addr
+			ping -c1 -t$PING_DEFAULT_TTL $_addr
 			;;
 	esac
 }
@@ -153,7 +153,7 @@ function server_add() {
 function cecho() {
 	one_line=false
 	while [ "${1}" ]; do
-		case "${1}" in 
+		case "${1}" in
 			-normal)        color="\033[00m" ;;
 			-black)         color="\033[30;01m" ;;
 			-red)           color="\033[31;01m" ;;
@@ -163,7 +163,7 @@ function cecho() {
 			-magenta)       color="\033[35;01m" ;;
 			-cyan)          color="\033[36;01m" ;;
 			-white)         color="\033[37;01m" ;;
-			-n)             one_line=true;   shift ; continue ;;
+			-n)             one_line=true;  shift ; continue ;;
 			*)              echo -n "${1}"; shift ; continue ;;
 		esac
 		shift
@@ -220,6 +220,9 @@ case "$cmd" in
 				user=$(get_user "${2}")
 			fi
 			addr=$(get_addr "${2}")
+			if ${USE_IDN2}; then
+				addr=$(idn2 $addr)
+			fi
 			port=$(get_port "${2}")
 			# Use default port when parameter is missing
 			if [ "$port" == "" ]; then
