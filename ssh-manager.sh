@@ -125,11 +125,11 @@ function test_host() {
 }
 
 function show_server() {
-	while IFS=: read label user addr port
+	while IFS=: read alias user addr port
 	do
 		test_host $addr
 		echo -ne '|'
-		cecho -n -blue $label
+		cecho -n -blue $alias
 		echo -ne '|'
 		cecho -n -red $user
 		echo -n "@"
