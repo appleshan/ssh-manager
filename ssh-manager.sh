@@ -221,10 +221,6 @@ function server_connect() {
 
 #=============================================================================
 
-cmd=$1
-alias=$2
-user=$3
-
 # if config directory doesn't exist
 if [ ! -d $CONF_DIR ]; then mkdir "$CONF_DIR"; fi
 # if host file doesn't exist
@@ -236,7 +232,11 @@ if [ ! -f $HOST_FILE ]; then
 	fi
 fi
 # if config file doesn't exist
-if [ ! -f $CONF_FILE ]; then touch "$CONF_FILE"; fi
+if [ ! -f $CONF_FILE ]; then
+	touch "$CONF_FILE"
+	else
+		source "$CONF_FILE"
+fi
 
 # without args
 if [ $# -eq 0 ]; then
@@ -251,25 +251,32 @@ if [ $# -eq 0 ]; then
 	exit 0
 fi
 
-case "$cmd" in
-	# Connect to host
+while [[ $# -gt 0 ]]; do
+key="${1}"
+case "$key" in
 	cc|co|connect )
 		server_connect ${2} ${3}
+		exit 0
 		;;
-	# Add new alias
 	add )
 		server_add ${2}
+		exit 0
 		;;
-	# Export host file
 	export )
 		cat $HOST_FILE
+		exit 0
 		;;
-	# Delete alias
 	del|delete )
 		server_delete ${2}
+		exit 0
+		;;
+	-h|--help|help )
+		list_commands
+		exit 0
 		;;
 	* )
-		echo "$0: unrecognised command '$cmd'"
+		echo "$0: unrecognised command '$key'"
 		exit 1
 		;;
 esac
+done
