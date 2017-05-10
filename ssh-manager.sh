@@ -237,13 +237,14 @@ if [ ! -f $CONF_FILE ]; then
 	else
 		source "$CONF_FILE"
 fi
+# if idn2 is not present but configured
+if (${USE_IDN2} && ! [ -x "$(command -v idn2)" ]); then
+	echo "$0: command idn2 not found, but USE_IDN2 set to true in configuration. (Edit $CONF_FILE to solve this issue.)"
+	exit 1
+fi
 
 # without args
 if [ $# -eq 0 ]; then
-	if (${USE_IDN2} && ! [ -x "$(command -v idn2)" ]); then
-		echo "$0: command icn2 not found, but USE_IDN2 set to true in configuration."
-		exit 1
-	fi
 	echo -n "List of availables servers for user "; cecho -blue "$(whoami):"
 	_check=$(show_server)
 	echo -e "$_check"| column -t -s '|'
