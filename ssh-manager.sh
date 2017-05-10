@@ -182,6 +182,31 @@ function server_add() {
 	fi
 }
 
+function server_connect() {
+	alias=${1}
+	probe "$alias"
+	if [ $? -eq 0 ]; then
+		if [ "${2}" == ""  ]; then
+			user=$(get_user "$alias")
+		fi
+		addr=$(get_addr "$alias")
+		if ${USE_IDN2}; then
+			addr=$(idn2 $addr)
+		fi
+		port=$(get_port "$alias")
+		# Use default port when parameter is missing
+		if [ "$port" == "" ]; then
+			port=$SSH_DEFAULT_PORT
+		fi
+		echo "connecting to '$alias' ($addr:$port)"
+		ssh $user@$addr -p $port
+	else
+		echo "$0: unknown alias '$alias'"
+		exit 1
+	fi
+}
+
+
 #=============================================================================
 
 cmd=$1
@@ -217,26 +242,7 @@ fi
 case "$cmd" in
 	# Connect to host
 	cc|co|connect )
-		probe "${2}"
-		if [ $? -eq 0 ]; then
-			if [ "${3}" == ""  ]; then
-				user=$(get_user "${2}")
-			fi
-			addr=$(get_addr "${2}")
-			if ${USE_IDN2}; then
-				addr=$(idn2 $addr)
-			fi
-			port=$(get_port "${2}")
-			# Use default port when parameter is missing
-			if [ "$port" == "" ]; then
-				port=$SSH_DEFAULT_PORT
-			fi
-			echo "connecting to '${2}' ($addr:$port)"
-			ssh $user@$addr -p $port
-		else
-			echo "$0: unknown alias '${2}'"
-			exit 1
-		fi
+		server_connect ${2} ${3}
 		;;
 	# Add new alias
 	add )
