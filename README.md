@@ -17,7 +17,7 @@ You may want to use the ` idn2 ` package if you use non ASCII domain.
 
 Thanks!
 
-```
+```shell
 # ./ssh-manager.sh add local1:root:localhost:22
 new alias 'local:root:localhost:22' added
 # ./ssh-manager.sh add local2:root:127.0.0.1:22
@@ -43,7 +43,7 @@ local:root:10.20.0.7:22:
 #
 ```
 ## Installation
-```
+```shell
 $ cd ~
 $ wget --no-check-certificate https://raw.github.com/robinparisi/ssh-manager/master/ssh-manager.sh
 $ chmod +x ssh-manager.sh
@@ -52,8 +52,9 @@ $ ./ssh-manager.sh
 For more convenience, you can create an alias into your .bashrc, .zshrc, etc...
 
 For example :
-
-`alias sshs="/Users/robin/ssh-manager.sh"`
+```shell
+alias sshs="/Users/robin/ssh-manager.sh"
+```
 
 ## Use
 ```
