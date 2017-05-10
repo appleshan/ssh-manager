@@ -182,6 +182,18 @@ function server_add() {
 	fi
 }
 
+function server_delete() {
+	alias=${1}
+	probe "$alias"
+	if [ $? -eq 0 ]; then
+		cat $HOST_FILE | sed '/^'$alias$DATA_DELIM'/d' > /tmp/.tmp.$$
+		mv /tmp/.tmp.$$ $HOST_FILE
+		echo "alias '$alias' removed"
+	else
+		echo "$0: unknown alias '$alias'"
+	fi
+}
+
 function server_connect() {
 	alias=${1}
 	probe "$alias"
@@ -250,19 +262,11 @@ case "$cmd" in
 		;;
 	# Export host file
 	export )
-		echo
 		cat $HOST_FILE
 		;;
 	# Delete alias
 	del|delete )
-		probe "${2}"
-		if [ $? -eq 0 ]; then
-			cat $HOST_FILE | sed '/^'${2}$DATA_DELIM'/d' > /tmp/.tmp.$$
-			mv /tmp/.tmp.$$ $HOST_FILE
-			echo "alias '${2}' removed"
-		else
-			echo "$0: unknown alias '${2}'"
-		fi
+		server_delete ${2}
 		;;
 	* )
 		echo "$0: unrecognised command '$cmd'"
