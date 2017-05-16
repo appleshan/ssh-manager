@@ -121,11 +121,11 @@ function test_host() {
 		echo -n "["
 		cecho -n -green "UP"
 		echo -n "]"
-	fi 
+	fi
 }
 
 function show_server() {
-	while IFS=: read alias user addr port
+	while IFS="$DATA_DELIM" read alias user addr port
 	do
 		test_host $addr
 		echo -ne '|'
@@ -140,6 +140,12 @@ function show_server() {
 		fi
 		cecho -yellow $port
 	done < $HOST_FILE
+}
+
+function server_show() {
+	echo -n "List of availables servers for user "; cecho -blue "$(whoami):"
+	_check=$(show_server)
+	echo -e "$_check"| column -t -s '|'
 }
 
 function list_commands() {
@@ -218,13 +224,13 @@ function server_connect() {
 	fi
 }
 
-
 #=============================================================================
 
 # if config directory doesn't exist
 if [ ! -d $CONF_DIR ]; then mkdir "$CONF_DIR"; fi
 # if host file doesn't exist
 if [ ! -f $HOST_FILE ]; then
+	# if the old config file is found
 	if [ -f "$HOME/.ssh_servers" ]; then
 		mv "$HOME/.ssh_servers" $HOST_FILE
 	else
@@ -245,10 +251,9 @@ fi
 
 # without args
 if [ $# -eq 0 ]; then
-	echo -n "List of availables servers for user "; cecho -blue "$(whoami):"
-	_check=$(show_server)
-	echo -e "$_check"| column -t -s '|'
-	echo; list_commands
+	server_show
+	echo
+	list_commands
 	exit 0
 fi
 
@@ -269,6 +274,10 @@ case "$key" in
 		;;
 	del|delete )
 		server_delete ${2}
+		exit 0
+		;;
+	show|list )
+		server_show
 		exit 0
 		;;
 	-h|--help|help )
