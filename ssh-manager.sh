@@ -125,7 +125,7 @@ function test_host() {
 }
 
 function show_server() {
-	while IFS="$DATA_DELIM" read alias user addr port
+	while IFS="$DATA_DELIM" read alias user password addr port
 	do
 		test_host $addr
 		echo -ne '|'
@@ -168,13 +168,14 @@ function server_add() {
 		_port=$SSH_DEFAULT_PORT
 		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
 	# elif alias:user:host(:port)?
-	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
+	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
 		then
 		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
 		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
-		_host=`echo ${1} | cut -d $DATA_DELIM -f 3`
-		_port=`echo ${1} | cut -d $DATA_DELIM -f 4`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
-		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
+		_password=`echo ${1} | cut -d $DATA_DELIM -f 3`
+		_host=`echo ${1} | cut -d $DATA_DELIM -f 4`
+		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
+		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_password$DATA_DELIM$_host$DATA_DELIM$_port"
 	else
 		echo "${1}: is not a valid input."
 		exit 1;
