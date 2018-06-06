@@ -172,24 +172,25 @@ function list_commands() {
 }
 
 function server_add() {
-	# if user@host
-	# This grep syntaxt SHOULD be POSIX BRE compliant
-	if echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}@[[:alnum:].-]\{1,\}$"
-		then
-		_user=`echo ${1} | cut -d @ -f 1`
-		_host=`echo ${1} | cut -d @ -f 2`
-		_alias=$_host
-		_port=$SSH_DEFAULT_PORT
-		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_host$DATA_DELIM$_port"
-	# elif alias:user:host(:port)?
-	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:digit:].-]\{1,\}\)\{0,1\}$"
+	# if alias:user:pass:host(:port)?
+	if   echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}$"
 		then
 		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
 		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
-		_password=`echo ${1} | cut -d $DATA_DELIM -f 3`
+		_pass=`echo ${1} | cut -d $DATA_DELIM -f 3`
 		_host=`echo ${1} | cut -d $DATA_DELIM -f 4`
 		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
-		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_password$DATA_DELIM$_host$DATA_DELIM$_port"
+		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_pass$DATA_DELIM$_host$DATA_DELIM$_port"
+	# elif alias:user:pass:host(:port)(:private key)?
+	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:alnum:].!-~]\{1,\}\)$"
+		then
+		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
+		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
+		_pass=`echo ${1} | cut -d $DATA_DELIM -f 3`
+		_host=`echo ${1} | cut -d $DATA_DELIM -f 4`
+		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
+		_pkey=`echo ${1} | cut -d $DATA_DELIM -f 6`
+		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_pass$DATA_DELIM$_host$DATA_DELIM$_port$DATA_DELIM$_pkey"
 	else
 		echo "${1}: is not a valid input."
 		exit 1;
