@@ -23,8 +23,10 @@ CONF_FILE="$CONF_DIR/config"
 DATA_DELIM=":"
 DATA_ALIAS=1
 DATA_HUSER=2
-DATA_HADDR=3
-DATA_HPORT=4
+DATA_HPASS=3
+DATA_HADDR=4
+DATA_HPORT=5
+DATA_HPKEY=6
 PING_DEFAULT_TTL=20
 SSH_DEFAULT_PORT=22
 ENABLE_CECHO=true
@@ -94,6 +96,18 @@ function get_user ()
 {
 	als=$1
 	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HUSER' }'
+}
+
+function get_pass ()
+{
+	als=$1
+	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HPASS' }'
+}
+
+function get_pkey ()
+{
+	als=$1
+	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HPKEY' }'
 }
 
 function exec_ping() {
@@ -225,6 +239,51 @@ function server_connect() {
 	fi
 }
 
+function server_auto_connect() {
+	alias=${1}
+	probe "$alias"
+	if [ $? -eq 0 ]; then
+		user=$(get_user "$alias")
+		pass=$(get_pass "$alias")
+		addr=$(get_addr "$alias")
+		port=$(get_port "$alias")
+		pkey=$(get_pkey "$alias")
+		# Use default port when parameter is missing
+		if [ "$port" == "" ]; then
+			port=$SSH_DEFAULT_PORT
+		fi
+
+		echo "connecting to '$alias' ($addr:$port)"
+
+		command="
+	        expect {
+                \"*password:\" { set timeout 11000; send \"${pass}\r\"; exp_continue ; sleep 3; }
+                \"*passphrase\" { set timeout 6000; send \"${pass}\r\"; exp_continue ; sleep 3; }
+                \"yes/no\" { send \"yes\r\"; exp_continue; }
+                \"Last*\" {  }
+	        }
+	        interact
+	    ";
+
+		if [ -n "$pkey" ]
+		then
+			expect -c "
+				spawn ssh -p ${port} -i ${pkey} ${user}@${addr}
+				${command}
+			"
+		else
+			expect -c "
+				spawn ssh -p ${port} ${user}@${addr}
+				${command}
+			"
+		fi
+
+	else
+		echo "$0: unknown alias '$alias'"
+		exit 1
+	fi
+}
+
 #=============================================================================
 
 # if config directory doesn't exist
@@ -262,7 +321,7 @@ while [[ $# -gt 0 ]]; do
 key="${1}"
 case "$key" in
 	cc|co|connect )
-		server_connect ${2} ${3}
+		server_auto_connect ${2} ${3}
 		exit 0
 		;;
 	add )
