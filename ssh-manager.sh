@@ -182,7 +182,7 @@ function server_add() {
 		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
 		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_pass$DATA_DELIM$_host$DATA_DELIM$_port"
 	# elif alias:user:pass:host(:port)(:private key)?
-	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:alnum:].!-~]\{1,\}\)$"
+	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)$"
 		then
 		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
 		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
