@@ -258,8 +258,8 @@ function server_auto_connect() {
 
 		command="
 	        expect {
-                \"*password:\" { set timeout 11000; send \"${pass}\r\"; exp_continue ; sleep 3; }
-                \"*passphrase\" { set timeout 6000; send \"${pass}\r\"; exp_continue ; sleep 3; }
+                \"*password\" { send \"${pass}\n\"; exp_continue ; sleep 2; }
+                \"*passphrase\" { send \"${pass}\r\"; exp_continue ; sleep 2; }
                 \"yes/no\" { send \"yes\r\"; exp_continue; }
                 \"Last*\" {  }
 	        }
@@ -269,12 +269,14 @@ function server_auto_connect() {
 		if [ -n "$pkey" ]
 		then
 			expect -c "
-				spawn ssh -p ${port} -i ${pkey} ${user}@${addr}
+			    set timeout 2000
+				spawn ssh ${user}@${addr} -p ${port} -i ${pkey}
 				${command}
 			"
 		else
 			expect -c "
-				spawn ssh -p ${port} ${user}@${addr}
+			    set timeout 2000
+				spawn ssh ${user}@${addr} -p ${port}
 				${command}
 			"
 		fi
