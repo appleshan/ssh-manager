@@ -3,11 +3,10 @@
 # Original script by Errol Byrd
 # Copyright (c) 2010, Errol Byrd <errolbyrd@gmail.com>
 #########################################
-# Modified by Robin Parisi
-# Contact at parisi.robin@gmail.com
-# Github https://github.com/robinparisi/ssh-manager
-# github.io Page https://robinparisi.github.io/ssh-manager/
-# Contributors https://github.com/robinparisi/ssh-manager/graphs/contributors
+# Modified by Apple Shan
+# Contact at apple.shan@gmail.com
+# Github https://github.com/appleshan/ssh-manager
+# Contributors https://github.com/appleshan/ssh-manager/graphs/contributors
 
 #================== Globals ==================================================
 
