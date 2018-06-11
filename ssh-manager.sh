@@ -16,23 +16,37 @@ VERSION="0.7-dev"
 
 # Default Configuration
 CONF_DIR="$HOME/.ssh-manager"
-HOST_FILE="$CONF_DIR/servers"
+HOST_FILE="$CONF_DIR/servers.json"
 CONF_FILE="$CONF_DIR/config"
-# default structur is $DATA_ALIAS$DATA_DELIM$DATA_HUSER$DATA_DELIM$DATA_HADDR$DATA_DELIM$DATA_HPORT
-# or, more human friendly alias:user:host:port
+# default structur is :
+# {
+#     "name": "$DATA_ALIAS",
+#     "host": "$DATA_HADDR",
+#     "port": $DATA_HPORT,
+#     "user": "$DATA_HUSER",
+#     "password": "test-2017.com",
+#     "connecttype": "ssh",
+#     "sshtype": "pass",
+#     "language": "None"
+# }
 DATA_DELIM=":"
 DATA_ALIAS=1
-DATA_HUSER=2
-DATA_HPASS=3
-DATA_HADDR=4
-DATA_HPORT=5
-DATA_HPKEY=6
+DATA_HADDR=2
+DATA_HPORT=3
+DATA_HUSER=4
+DATA_HPASS=5
+DATA_HPKEY=7
 PING_DEFAULT_TTL=20
 SSH_DEFAULT_PORT=22
 ENABLE_CECHO=true
-USE_IDN2=false
 
 #================== Functions ================================================
+
+[ -z "$CONNJSON" ] && _BJSON=./JSON.sh || _BJSON=$CONNJSON
+if [ ! -f $HOST_FILE ]; then
+    echo "not fount profile file $HOST_FILE"
+    exit 0
+fi
 
 function cecho() {
 	one_line=false
@@ -68,7 +82,7 @@ function cecho() {
 function probe ()
 {
 	als=$1
-	awk=$(awk -F "$DATA_DELIM" -v als="$als" '$1 == als { print $0 }' $HOST_FILE 2> /dev/null)
+	awk=$(cat $CONF_DIR/servers_list | grep "$als")
 	if [[ -z "$awk" ]]; then
 		return 1;
 	fi
@@ -77,44 +91,41 @@ function probe ()
 function get_raw ()
 {
 	als=$1
-	awk -F "$DATA_DELIM" -v als="$als" '$1 == als { print $0 }' $HOST_FILE 2> /dev/null
+	cat $CONF_DIR/servers_list | grep "$als" | awk '{print $2}' 2> /dev/null
 }
 
 function get_addr ()
 {
 	als=$1
-	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HADDR' }'
+	get_raw "$als" | awk '{print substr($1, 2, length($1)-2)}' | awk -F "," '{ print $'$DATA_HADDR' }' | awk -F ":" '{ print $2 }' | awk '{print substr($1, 2, length($1)-2)}'
 }
 
 function get_port ()
 {
 	als=$1
-	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HPORT'}'
+	get_raw "$als" | awk '{print substr($1, 2, length($1)-2)}' | awk -F "," '{ print $'$DATA_HPORT' }' | awk -F ":" '{ print $2 }'
 }
 
 function get_user ()
 {
 	als=$1
-	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HUSER' }'
+	get_raw "$als" | awk '{print substr($1, 2, length($1)-2)}' | awk -F "," '{ print $'$DATA_HUSER' }' | awk -F ":" '{ print $2 }' | awk '{print substr($1, 2, length($1)-2)}'
 }
 
 function get_pass ()
 {
 	als=$1
-	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HPASS' }'
+	get_raw "$als" | awk '{print substr($1, 2, length($1)-2)}' | awk -F "," '{ print $'$DATA_HPASS' }' | awk -F ":" '{ print $2 }' | awk '{print substr($1, 2, length($1)-2)}'
 }
 
 function get_pkey ()
 {
 	als=$1
-	get_raw "$als" | awk -F "$DATA_DELIM" '{ print $'$DATA_HPKEY' }'
+	get_raw "$als" | awk '{print substr($1, 2, length($1)-2)}' | awk -F "," '{ print $'$DATA_HPKEY' }' | awk -F ":" '{ print $2 }' | awk '{print substr($1, 2, length($1)-2)}'
 }
 
 function exec_ping() {
 	_addr=$@
-	if ${USE_IDN2}; then
-		_addr=$(idn2 $_addr)
-	fi
 	case $(uname) in
 		MINGW*)
 			ping -n 1 -i $PING_DEFAULT_TTL $_addr
@@ -139,21 +150,29 @@ function test_host() {
 }
 
 function show_server() {
-	while IFS="$DATA_DELIM" read alias user password addr port
+	config=`cat $HOST_FILE | $_BJSON -n | egrep '\[[[:digit:]{1}]\]'> $CONF_DIR/servers_list`
+
+	while IFS="	" read index json
 	do
-		test_host $addr
+        connname=`echo $json | $_BJSON -l | grep "name" | awk '{print substr($2, 2, length($2)-2)}'`
+        connhost=`echo $json | $_BJSON -l | grep "host" | awk '{print substr($2, 2, length($2)-2)}'`
+        connport=`echo $json | $_BJSON -l | grep "port" | awk '{print $2}'`
+        connuser=`echo $json | $_BJSON -l | grep "user" | awk '{print substr($2, 2, length($2)-2)}'`
+        connpass=`echo $json | $_BJSON -l | grep "password" | awk '{print substr($2, 2, length($2)-2)}'`
+        connlang=`echo $json | $_BJSON -l | grep "lang" | awk '{print substr($2, 2, length($2)-2)}'`
+        conntype=`echo $json | $_BJSON -l | grep "conn" | awk '{print substr($2, 2, length($2)-2)}'`
+        conntssh=`echo $json | $_BJSON -l | grep "ssht" | awk '{print substr($2, 2, length($2)-2)}'`
+
+		test_host $connhost
 		echo -ne '|'
-		cecho -n -blue $alias
+		cecho -n -blue $connname
 		echo -ne '|'
-		cecho -n -red $user
+		cecho -n -red $connuser
 		echo -n "@"
-		cecho -n -white $addr
+		cecho -n -white $connhost
 		echo -n ':'
-		if [ "$port" == "" ]; then
-			port=$SSH_DEFAULT_PORT
-		fi
-		cecho -yellow $port
-	done < $HOST_FILE
+		cecho -yellow $connport
+	done < $CONF_DIR/servers_list
 }
 
 function server_show() {
@@ -171,39 +190,6 @@ function list_commands() {
 	echo -ne "$0 "; cecho -n -yellow "export"; echo -ne "\t\t\t\t\t"; cecho -white "export config"
 }
 
-function server_add() {
-	# if alias:user:pass:host(:port)?
-	if   echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}$"
-		then
-		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
-		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
-		_pass=`echo ${1} | cut -d $DATA_DELIM -f 3`
-		_host=`echo ${1} | cut -d $DATA_DELIM -f 4`
-		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
-		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_pass$DATA_DELIM$_host$DATA_DELIM$_port"
-	# elif alias:user:pass:host(:port)(:private key)?
-	elif echo ${1} | grep -xq "^[[:alnum:].-]\{1,\}\($DATA_DELIM[[:alnum:].-]\{1,\}\)\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)\($DATA_DELIM[[:digit:].-]\{1,\}\)\{2\}\($DATA_DELIM[[:alnum:][:graph:]]\{1,\}\)$"
-		then
-		_alias=`echo ${1} | cut -d $DATA_DELIM -f 1`
-		_user=`echo ${1} | cut -d $DATA_DELIM -f 2`
-		_pass=`echo ${1} | cut -d $DATA_DELIM -f 3`
-		_host=`echo ${1} | cut -d $DATA_DELIM -f 4`
-		_port=`echo ${1} | cut -d $DATA_DELIM -f 5`; if [ -z "$_port" ]; then _port=$SSH_DEFAULT_PORT; fi
-		_pkey=`echo ${1} | cut -d $DATA_DELIM -f 6`
-		_full="$_alias$DATA_DELIM$_user$DATA_DELIM$_pass$DATA_DELIM$_host$DATA_DELIM$_port$DATA_DELIM$_pkey"
-	else
-		echo "${1}: is not a valid input."
-		exit 1;
-	fi
-	probe "$_alias"
-	if [ $? -eq 0 ]; then
-		echo "$0: alias '${1}' already exist"
-	else
-		echo "$_full" >> $HOST_FILE
-		echo "new alias '$_full' added"
-	fi
-}
-
 function server_delete() {
 	alias=${1}
 	probe "$alias"
@@ -213,30 +199,6 @@ function server_delete() {
 		echo "alias '$alias' removed"
 	else
 		echo "$0: unknown alias '$alias'"
-	fi
-}
-
-function server_connect() {
-	alias=${1}
-	probe "$alias"
-	if [ $? -eq 0 ]; then
-		if [ "${2}" == ""  ]; then
-			user=$(get_user "$alias")
-		fi
-		addr=$(get_addr "$alias")
-		if ${USE_IDN2}; then
-			addr=$(idn2 $addr)
-		fi
-		port=$(get_port "$alias")
-		# Use default port when parameter is missing
-		if [ "$port" == "" ]; then
-			port=$SSH_DEFAULT_PORT
-		fi
-		echo "connecting to '$alias' ($addr:$port)"
-		ssh $user@$addr -p $port
-	else
-		echo "$0: unknown alias '$alias'"
-		exit 1
 	fi
 }
 
@@ -266,7 +228,7 @@ function server_auto_connect() {
 	        interact
 	    ";
 
-		if [ -n "$pkey" ]
+		if [ $pkey != "pass" ]
 		then
 			expect -c "
 			    set timeout 2000
@@ -306,11 +268,6 @@ if [ ! -f $CONF_FILE ]; then
 	else
 		source "$CONF_FILE"
 fi
-# if idn2 is not present but configured
-if (${USE_IDN2} && ! [ -x "$(command -v idn2)" ]); then
-	echo "$0: command idn2 not found, but USE_IDN2 set to true in configuration. (Edit $CONF_FILE to solve this issue.)"
-	exit 1
-fi
 
 # without args
 if [ $# -eq 0 ]; then
@@ -325,10 +282,6 @@ key="${1}"
 case "$key" in
 	cc|co|connect )
 		server_auto_connect ${2} ${3}
-		exit 0
-		;;
-	add )
-		server_add ${2}
 		exit 0
 		;;
 	export )
