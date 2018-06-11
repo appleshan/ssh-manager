@@ -42,6 +42,9 @@ ENABLE_CECHO=true
 
 #================== Functions ================================================
 
+# JSON.sh:
+# @see https://github.com/dominictarr/JSON.sh
+
 [ -z "$CONNJSON" ] && _BJSON=./JSON.sh || _BJSON=$CONNJSON
 if [ ! -f $HOST_FILE ]; then
     echo "not fount profile file $HOST_FILE"
